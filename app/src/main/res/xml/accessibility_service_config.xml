@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Accessibility Service Configuration
-    Defines what events the service receives
+
+    This configures how the accessibility service operates.
+    It only listens to window state changes (app switches).
 -->
 <accessibility-service
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/accessibility_service_description"
-    android:packageNames=""
-    android:accessibilityEventTypes="typeWindowStateChanged"
-    android:accessibilityFlags="flagIncludeNotImportantViews"
-    android:canRetrieveWindowContent="true"
     android:settingsActivity="com.example.detox.ui.MainActivity"
-    android:notificationTimeout="100" />
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:notificationTimeout="100"
+    android:canRetrieveWindowContent="false" />

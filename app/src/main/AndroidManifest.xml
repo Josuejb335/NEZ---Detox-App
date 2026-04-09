@@ -1,38 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    DETOX APP BLOCKER - AndroidManifest.xml
+    DETOX - Digital Wellbeing App Blocker
     ======================================
 
-    IMPORTANT SETUP INSTRUCTIONS:
-    1. Build and install the app
-    2. Grant required permissions:
-       - Go to Settings > Apps > Detox > Permissions
-       - Enable "Display over other apps" (SYSTEM_ALERT_WINDOW)
-    3. Enable Accessibility Service:
-       - Go to Settings > Accessibility > Detox App Blocker
-       - Turn ON the service
-       - This is required to detect foreground apps
-    4. Disable battery optimization:
-       - Settings > Apps > Detox > Battery > Unrestricted
+    This app helps users reduce screen time by temporarily blocking
+    distracting apps. Uses Accessibility Service for foreground app
+    detection (required for functionality).
+
+    COMPLIANCE NOTES:
+    - Accessibility Service is ONLY used for digital wellbeing
+    - User has full control and can disable at any time
+    - No data collection or transmission
+    - App does NOT prevent uninstall
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!--
-        PERMISSIONS EXPLANATION:
-        - FOREGROUND_SERVICE: Required to run the persistent service
-        - SYSTEM_ALERT_WINDOW: Required to show block overlay
-        - PACKAGE_USAGE_STATS: Optional - to get app usage info
-        - RECEIVE_BOOT_COMPLETED: Optional - auto-start on boot
-    -->
+    <!-- Foreground service - required for background monitoring -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
-    <uses-permission android:name="android.permission.REORDER_TASKS" />
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
+
+    <!-- Accessibility Service - for detecting foreground apps
+         This is a core feature for digital wellbeing -->
+    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
+
+    <!-- Query apps - to show list of installed apps -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
 
     <application
         android:name=".DetoxApplication"
@@ -42,12 +36,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Detox"
-        tools:targetApi="31">
+        tools:targetApi="34">
 
-        <!--
-            MainActivity: Entry point of the app
-            Shows list of apps and blocked status
-        -->
+        <!-- Main Activity - App entry point -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true">
@@ -57,30 +48,28 @@
             </intent-filter>
         </activity>
 
-        <!--
-            BlockOverlayActivity: Shows "App Blocked" screen
-            NoHistory=true so it doesn't stay in back stack
-            ExcludeFromRecents=true so it's hidden from app switcher
-            TaskOnHome=false keeps it on top of blocked app
-        -->
+        <!-- Block Activity - Shown when app is blocked
+             Transparent blocking UI, noHistory to prevent back stack -->
         <activity
-            android:name=".ui.BlockOverlayActivity"
+            android:name=".blocking.BlockActivity"
             android:excludeFromRecents="true"
             android:noHistory="true"
-            android:theme="@style/Theme.Detox.BlockOverlay"
-            android:launchMode="singleInstance"
-            android:clearTaskOnLaunch="true"
-            android:stateNotNeeded="true"
-            android:exported="false" />
+            android:launchMode="singleTask"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
 
-        <!--
-            AppBlockAccessibilityService: Detects foreground app changes
-            This is the core detection mechanism
-        -->
+        <!-- Accessibility Service - Detects foreground app changes
+             REQUIRED: User must enable in Settings > Accessibility
+
+             Disclosure: This service is used solely for digital wellbeing
+             purposes. It detects when the user opens apps and checks if
+             they are in the user's block list. No personal data is collected
+             or transmitted. -->
         <service
-            android:name=".service.AppBlockAccessibilityService"
+            android:name=".service.MonitorAccessibilityService"
             android:exported="true"
-            android:label="@string/app_blocker_name"
+            android:label="@string/accessibility_service_label"
+            android:description="@string/accessibility_service_description"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
@@ -90,12 +79,10 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
-        <!--
-            AppBlockService: Foreground service to keep app alive
-            Runs persistently in background
-        -->
+        <!-- Foreground Service - Keeps app alive during blocking
+             Required by Android for background operation -->
         <service
-            android:name=".service.AppBlockService"
+            android:name=".service.MonitorForegroundService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 

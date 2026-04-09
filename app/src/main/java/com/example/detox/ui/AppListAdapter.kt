@@ -1,23 +1,30 @@
 package com.example.detox.ui
 
+import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.detox.data.AppInfo
 import com.example.detox.databinding.ItemAppBinding
 
 /**
- * RecyclerView Adapter for app list
- *
- * PURPOSE:
- * - Displays app icon, name, and block toggle
- * - Handles user interactions
+ * Data class for app list item
+ */
+data class AppItem(
+    val packageName: String,
+    val appName: String,
+    val icon: Drawable?,
+    val isBlocked: Boolean,
+    val attemptCount: Int
+)
+
+/**
+ * RecyclerView adapter for app list
  */
 class AppListAdapter(
-    private val onToggle: (AppInfo, Boolean) -> Unit
-) : ListAdapter<AppInfo, AppListAdapter.ViewHolder>(AppDiffCallback()) {
+    private val onToggle: (packageName: String, appName: String, isBlocked: Boolean) -> Unit
+) : ListAdapter<AppItem, AppListAdapter.ViewHolder>(AppDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemAppBinding.inflate(
@@ -34,34 +41,36 @@ class AppListAdapter(
         private val binding: ItemAppBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(app: AppInfo) {
+        fun bind(item: AppItem) {
             binding.apply {
-                // App icon
-                ivAppIcon.setImageDrawable(app.icon)
+                ivAppIcon.setImageDrawable(item.icon)
+                tvAppName.text = item.appName
 
-                // App name
-                tvAppName.text = app.appName
+                // Show attempt count if > 0
+                if (item.attemptCount > 0) {
+                    tvAttempts.text = "Tried ${item.attemptCount} times"
+                    tvAttempts.visibility = android.view.View.VISIBLE
+                } else {
+                    tvAttempts.visibility = android.view.View.GONE
+                }
 
-                // Block toggle
+                // Handle toggle
                 switchBlock.setOnCheckedChangeListener(null)
-                switchBlock.isChecked = app.isBlocked
+                switchBlock.isChecked = item.isBlocked
                 switchBlock.setOnCheckedChangeListener { _, isChecked ->
-                    onToggle(app, isChecked)
+                    onToggle(item.packageName, item.appName, isChecked)
                 }
             }
         }
     }
 
-    /**
-     * DiffUtil for efficient list updates
-     */
-    class AppDiffCallback : DiffUtil.ItemCallback<AppInfo>() {
-        override fun areItemsTheSame(oldItem: AppInfo, newItem: AppInfo): Boolean {
-            return oldItem.packageName == newItem.packageName
+    class AppDiffCallback : DiffUtil.ItemCallback<AppItem>() {
+        override fun areItemsTheSame(old: AppItem, new: AppItem): Boolean {
+            return old.packageName == new.packageName
         }
 
-        override fun areContentsTheSame(oldItem: AppInfo, newItem: AppInfo): Boolean {
-            return oldItem == newItem
+        override fun areContentsTheSame(old: AppItem, new: AppItem): Boolean {
+            return old == new
         }
     }
 }

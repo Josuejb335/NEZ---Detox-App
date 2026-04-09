@@ -1,5 +1,18 @@
 <resources>
     <string name="app_name">Detox</string>
-    <string name="app_blocker_name">Detox App Blocker</string>
-    <string name="accessibility_service_description">Required to detect when blocked apps are opened</string>
+
+    <!-- Accessibility Service -->
+    <string name="accessibility_service_label">Detox Monitoring</string>
+    <string name="accessibility_service_description">
+        Required to detect when blocked apps are opened. This service is used
+        solely for digital wellbeing purposes. It does not collect or transmit
+        any personal data.
+    </string>
+
+    <!-- UI Labels -->
+    <string name="blocked_title">App Blocked</string>
+    <string name="blocked_message">This app is temporarily blocked to help you focus.</string>
+    <string name="btn_go_back">Go Back</string>
+    <string name="btn_take_break">Take a Break</string>
+
 </resources>

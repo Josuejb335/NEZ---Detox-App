@@ -1,6 +1,7 @@
 package com.example.detox.ui
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -16,14 +17,7 @@ import com.example.detox.databinding.ActivityBlockOverlayBinding
  * PURPOSE:
  * - Displays full-screen "App Blocked" message
  * - Prevents user from accessing blocked app
- * - User must go back to exit
- *
- * MODIFY THIS:
- * - Add countdown timer before allowing exit
- * - Add motivational quotes
- * - Add "Emergency access" with confirmation
- * - Add usage statistics
- * - Customize theme/colors
+ * - Aggressively keeps blocking until user gives up
  */
 class BlockOverlayActivity : Activity() {
 
@@ -34,43 +28,39 @@ class BlockOverlayActivity : Activity() {
 
     private lateinit var binding: ActivityBlockOverlayBinding
     private var blockedPackageName: String = ""
-    private var canExit = false
+    private val handler = Handler(Looper.getMainLooper())
+    private var checkCount = 0
+    private val maxChecks = 50 // Check for ~5 seconds
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Get blocked package name before setting content
+        // Get blocked package name
         blockedPackageName = intent.getStringExtra(EXTRA_BLOCKED_PACKAGE) ?: "Unknown"
         Log.d(TAG, "Blocking: $blockedPackageName")
 
-        // Set up window flags IMMEDIATELY before setting content view
+        // Set up window flags IMMEDIATELY
         setupWindow()
 
         binding = ActivityBlockOverlayBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Set up UI
         setupUI()
 
-        // Allow exit after delay (prevents accidental immediate close)
-        Handler(Looper.getMainLooper()).postDelayed({
-            canExit = true
-        }, 500)
+        // Start aggressive monitoring
+        startAggressiveBlocking()
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        // Update blocked package if new intent received
         intent?.getStringExtra(EXTRA_BLOCKED_PACKAGE)?.let {
             blockedPackageName = it
             binding.tvPackageName.text = it
-            Log.d(TAG, "Updated blocked package: $it")
         }
     }
 
     /**
      * Configure window to appear above other apps
-     * IMPORTANT: These flags must be set before setContentView
      */
     private fun setupWindow() {
         window.apply {
@@ -78,7 +68,7 @@ class BlockOverlayActivity : Activity() {
             addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
             addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
 
-            // Keep screen on and bright
+            // Keep screen on
             addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
             // Full screen
@@ -86,86 +76,118 @@ class BlockOverlayActivity : Activity() {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN
             )
-
-            // Secure flag - prevents screenshots (optional security)
-            // addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
     }
 
     /**
-     * Set up the UI elements
+     * Set up the UI
      */
     private fun setupUI() {
-        // Show which app is blocked
         binding.tvBlockedApp.text = "App Blocked"
         binding.tvPackageName.text = blockedPackageName
 
-        // Close button
         binding.btnClose.setOnClickListener {
-            if (canExit) {
-                closeBlocker()
-            }
+            closeBlocker()
         }
     }
 
     /**
-     * Close the blocker and return to home
+     * Aggressively monitor and keep blocking
+     */
+    private fun startAggressiveBlocking() {
+        // Initial kill and home
+        killBlockedApp()
+        goHome()
+
+        // Keep checking and killing for a few seconds
+        val checkRunnable = object : Runnable {
+            override fun run() {
+                checkCount++
+                if (checkCount < maxChecks) {
+                    killBlockedApp()
+                    handler.postDelayed(this, 100)
+                }
+            }
+        }
+        handler.postDelayed(checkRunnable, 100)
+    }
+
+    /**
+     * Kill the blocked app process
+     */
+    private fun killBlockedApp() {
+        try {
+            val am = getSystemService(ACTIVITY_SERVICE) as ActivityManager
+            am.killBackgroundProcesses(blockedPackageName)
+            Log.d(TAG, "Killed: $blockedPackageName")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to kill process", e)
+        }
+    }
+
+    /**
+     * Send to home screen
+     */
+    private fun goHome() {
+        try {
+            val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            startActivity(homeIntent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to go home", e)
+        }
+    }
+
+    /**
+     * Close the blocker
      */
     private fun closeBlocker() {
-        Log.d(TAG, "Closing blocker, sending to home")
+        // Final kills before closing
+        killBlockedApp()
+        goHome()
 
-        // Go to home screen
-        val homeIntent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_HOME)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
-        }
-        startActivity(homeIntent)
-
-        // Finish this activity
+        handler.removeCallbacksAndMessages(null)
         finish()
     }
 
     /**
-     * Prevent back button from going to blocked app
+     * Prevent back button
      */
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        // Go home instead of back to blocked app
-        closeBlocker()
+        // Don't allow back - force home
+        goHome()
     }
 
     /**
-     * Block volume and other keys
+     * Block volume keys
      */
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        // Block volume keys and other system keys while showing blocker
         return when (keyCode) {
             KeyEvent.KEYCODE_VOLUME_UP,
             KeyEvent.KEYCODE_VOLUME_DOWN,
-            KeyEvent.KEYCODE_VOLUME_MUTE,
-            KeyEvent.KEYCODE_HOME -> {
-                true // Consume these events
-            }
+            KeyEvent.KEYCODE_VOLUME_MUTE -> true
             else -> super.onKeyDown(keyCode, event)
         }
     }
 
     override fun onPause() {
         super.onPause()
-        // Keep the blocker showing - don't finish on pause
-        // This was causing the blocker to disappear too quickly
+        // If user somehow pauses us, keep killing the blocked app
+        killBlockedApp()
     }
 
     override fun onStop() {
         super.onStop()
-        // Try to keep the blocker active
-        // If user navigates away, we want them to come back to this
+        killBlockedApp()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        handler.removeCallbacksAndMessages(null)
         Log.d(TAG, "BlockOverlayActivity destroyed")
     }
 }

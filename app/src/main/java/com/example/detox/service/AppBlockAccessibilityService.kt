@@ -25,12 +25,7 @@ import com.example.detox.ui.BlockOverlayActivity
  * 1. System sends window state change events
  * 2. We extract the package name
  * 3. Check if package is in blocked list
- * 4. If blocked, show overlay
- *
- * MODIFY THIS:
- * - Add delay before blocking (grace period)
- * - Add whitelisted time windows
- * - Add usage tracking
+ * 4. If blocked, show overlay IMMEDIATELY and repeatedly
  */
 class AppBlockAccessibilityService : AccessibilityService() {
 
@@ -42,29 +37,36 @@ class AppBlockAccessibilityService : AccessibilityService() {
             "com.android.systemui",
             "com.android.launcher",
             "com.android.settings",
-            "com.google.android.apps.nexuslauncher"
+            "com.google.android.apps.nexuslauncher",
+            "com.google.android.apps.launcher"
         )
+
+        // Very short cooldown - only for same app
+        private const val BLOCK_COOLDOWN_MS = 200L
     }
 
     private lateinit var repository: BlockedAppsRepository
     private var lastDetectedPackage: String = ""
     private var lastBlockTime: Long = 0
-    private val BLOCK_COOLDOWN_MS = 1000 // Prevent rapid re-blocking
+    private var lastBlockedPackage: String = ""
+    private val handler = Handler(Looper.getMainLooper())
+    private val blockRunnable = mutableMapOf<String, Runnable>()
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        Log.d(TAG, "Accessibility Service connected - package: $packageName")
+        Log.d(TAG, "Accessibility Service connected - package: ${applicationContext.packageName}")
 
         // Initialize repository
         repository = BlockedAppsRepository(this)
 
         // Configure what events to receive
-        serviceInfo = AccessibilityServiceInfo().apply {
+        val info = AccessibilityServiceInfo().apply {
             eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
             flags = AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
-            notificationTimeout = 100
+            notificationTimeout = 0 // No delay
         }
+        setServiceInfo(info)
 
         // Start foreground service to keep process alive
         startForegroundService()
@@ -82,32 +84,37 @@ class AppBlockAccessibilityService : AccessibilityService() {
 
         // Get package name from event
         val packageName = event.packageName?.toString() ?: run {
-            Log.d(TAG, "Event has no package name")
             return
         }
-
-        // Skip if same as last detected
-        if (packageName == lastDetectedPackage) return
-        lastDetectedPackage = packageName
 
         // Skip system apps
         if (packageName in IGNORED_PACKAGES) {
-            Log.d(TAG, "Ignoring system app: $packageName")
             return
         }
 
-        // Skip our own app - compare to our actual package name
+        // Skip our own app
         if (packageName == applicationContext.packageName) {
-            Log.d(TAG, "Ignoring self: $packageName")
             return
         }
 
-        Log.d(TAG, "Foreground app detected: $packageName")
+        // Only process if it's a new package
+        if (packageName == lastDetectedPackage) {
+            // Still check if it should be blocked (user might have closed blocker)
+            if (shouldBlockApp(packageName)) {
+                // Check if app is still in foreground and re-block if needed
+                ensureBlocked(packageName)
+            }
+            return
+        }
+        lastDetectedPackage = packageName
+
+        Log.d(TAG, "Foreground app changed to: $packageName")
 
         // Check if app should be blocked
         if (shouldBlockApp(packageName)) {
             Log.d(TAG, "☠☠☠ BLOCKING: $packageName ☠☠☠")
-            blockApp(packageName)
+            // Block immediately and aggressively
+            blockAppAggressive(packageName)
         }
     }
 
@@ -117,50 +124,94 @@ class AppBlockAccessibilityService : AccessibilityService() {
 
     /**
      * Determine if app should be blocked
-     * EXTEND THIS:
-     * - Add time-based rules
-     * - Add daily usage limits
-     * - Add break intervals
      */
     private fun shouldBlockApp(packageName: String): Boolean {
-        val blockedApps = repository.getBlockedApps()
-        val isBlocked = repository.isBlocked(packageName)
-        Log.d(TAG, "Checking $packageName against blocked list: $blockedApps")
-        Log.d(TAG, "Is $packageName blocked? $isBlocked")
-        return isBlocked
+        return repository.isBlocked(packageName)
     }
 
     /**
-     * Trigger the block overlay
+     * Ensure app stays blocked - check if still in foreground
      */
-    private fun blockApp(packageName: String) {
-        // Cooldown check to prevent spam
+    private fun ensureBlocked(packageName: String) {
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastBlockTime < BLOCK_COOLDOWN_MS) {
-            Log.d(TAG, "Block cooldown active, skipping")
+        // Only re-block if enough time passed since last block
+        if (currentTime - lastBlockTime > 500 && lastBlockedPackage == packageName) {
+            blockAppAggressive(packageName)
+        }
+    }
+
+    /**
+     * Block app aggressively - show overlay AND send to home
+     */
+    private fun blockAppAggressive(packageName: String) {
+        val currentTime = System.currentTimeMillis()
+
+        // Check cooldown - only skip if same app blocked very recently
+        if (lastBlockedPackage == packageName &&
+            currentTime - lastBlockTime < BLOCK_COOLDOWN_MS) {
             return
         }
+
         lastBlockTime = currentTime
+        lastBlockedPackage = packageName
 
-        Log.d(TAG, "Starting BlockOverlayActivity for: $packageName")
+        // Cancel any pending block for this package
+        blockRunnable[packageName]?.let { handler.removeCallbacks(it) }
 
+        // Show overlay IMMEDIATELY
+        showBlockOverlay(packageName)
+
+        // Also kill the app process to prevent it from loading
+        killAppProcess(packageName)
+
+        // Send to home with minimal delay
+        handler.postDelayed({
+            sendUserToHome()
+        }, 50)
+
+        // Re-check after short delay and block again if needed
+        val reblockRunnable = Runnable {
+            if (lastDetectedPackage == packageName && shouldBlockApp(packageName)) {
+                Log.d(TAG, "Re-blocking $packageName - still detected")
+                showBlockOverlay(packageName)
+                killAppProcess(packageName)
+                sendUserToHome()
+            }
+        }
+        blockRunnable[packageName] = reblockRunnable
+        handler.postDelayed(reblockRunnable, 300)
+        handler.postDelayed(reblockRunnable, 600)
+    }
+
+    /**
+     * Show the block overlay
+     */
+    private fun showBlockOverlay(packageName: String) {
         try {
             val intent = Intent(this, BlockOverlayActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP or
                         Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or
-                        Intent.FLAG_ACTIVITY_NO_ANIMATION
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION or
+                        Intent.FLAG_ACTIVITY_NO_HISTORY
                 putExtra(BlockOverlayActivity.EXTRA_BLOCKED_PACKAGE, packageName)
             }
             startActivity(intent)
-            Log.d(TAG, "BlockOverlayActivity started successfully")
-
-            // Also send user to home screen to prevent app from showing
-            Handler(Looper.getMainLooper()).postDelayed({
-                sendUserToHome()
-            }, 100)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start BlockOverlayActivity", e)
+        }
+    }
+
+    /**
+     * Kill the blocked app process
+     */
+    private fun killAppProcess(packageName: String) {
+        try {
+            val am = getSystemService(ACTIVITY_SERVICE) as ActivityManager
+            am.killBackgroundProcesses(packageName)
+            Log.d(TAG, "Killed process: $packageName")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to kill process", e)
         }
     }
 
@@ -168,11 +219,17 @@ class AppBlockAccessibilityService : AccessibilityService() {
      * Send user to home screen
      */
     private fun sendUserToHome() {
-        val homeIntent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_HOME)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        try {
+            val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+            }
+            startActivity(homeIntent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send to home", e)
         }
-        startActivity(homeIntent)
     }
 
     /**

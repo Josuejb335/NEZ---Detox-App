@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Detox</string>
+    <string name="app_blocker_name">Detox App Blocker</string>
+    <string name="accessibility_service_description">Required to detect when blocked apps are opened</string>
+</resources>

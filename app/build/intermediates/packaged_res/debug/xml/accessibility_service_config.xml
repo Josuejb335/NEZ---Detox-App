@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Accessibility Service Configuration
+    Defines what events the service receives
+-->
+<accessibility-service
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/accessibility_service_description"
+    android:packageNames=""
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFlags="flagIncludeNotImportantViews"
+    android:canRetrieveWindowContent="true"
+    android:settingsActivity="com.example.detox.ui.MainActivity"
+    android:notificationTimeout="100" />

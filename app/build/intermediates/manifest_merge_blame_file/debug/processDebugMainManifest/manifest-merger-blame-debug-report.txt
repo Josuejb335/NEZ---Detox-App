@@ -1,0 +1,233 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<!--
+3    DETOX APP BLOCKER - AndroidManifest.xml
+4    ======================================
+5
+6    IMPORTANT SETUP INSTRUCTIONS:
+7    1. Build and install the app
+8    2. Grant required permissions:
+9       - Go to Settings > Apps > Detox > Permissions
+10       - Enable "Display over other apps" (SYSTEM_ALERT_WINDOW)
+11    3. Enable Accessibility Service:
+12       - Go to Settings > Accessibility > Detox App Blocker
+13       - Turn ON the service
+14       - This is required to detect foreground apps
+15    4. Disable battery optimization:
+16       - Settings > Apps > Detox > Battery > Unrestricted
+17-->
+18<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+19    package="com.example.detox"
+20    android:versionCode="1"
+21    android:versionName="1.0" >
+22
+23    <uses-sdk
+23-->INJECTED
+24        android:minSdkVersion="26"
+24-->INJECTED
+25        android:targetSdkVersion="34" />
+25-->INJECTED
+26
+27    <!--
+28        PERMISSIONS EXPLANATION:
+29        - FOREGROUND_SERVICE: Required to run the persistent service
+30        - SYSTEM_ALERT_WINDOW: Required to show block overlay
+31        - PACKAGE_USAGE_STATS: Optional - to get app usage info
+32        - RECEIVE_BOOT_COMPLETED: Optional - auto-start on boot
+33    -->
+34    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+34-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:28:5-77
+34-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:28:22-74
+35    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+35-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:29:5-78
+35-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:29:22-75
+36    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+36-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:30:5-78
+36-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:30:22-75
+37    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+37-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:31:5-81
+37-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:31:22-78
+38
+39    <permission
+39-->[androidx.core:core:1.12.0] /home/josue/.gradle/caches/9.3.1/transforms/dd4bce26bc96dffd875928815046b4b5/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+40        android:name="com.example.detox.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+40-->[androidx.core:core:1.12.0] /home/josue/.gradle/caches/9.3.1/transforms/dd4bce26bc96dffd875928815046b4b5/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+41        android:protectionLevel="signature" />
+41-->[androidx.core:core:1.12.0] /home/josue/.gradle/caches/9.3.1/transforms/dd4bce26bc96dffd875928815046b4b5/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+42
+43    <uses-permission android:name="com.example.detox.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+43-->[androidx.core:core:1.12.0] /home/josue/.gradle/caches/9.3.1/transforms/dd4bce26bc96dffd875928815046b4b5/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+43-->[androidx.core:core:1.12.0] /home/josue/.gradle/caches/9.3.1/transforms/dd4bce26bc96dffd875928815046b4b5/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+44
+45    <application
+45-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:33:5-94:19
+46        android:name="com.example.detox.DetoxApplication"
+46-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:34:9-41
+47        android:allowBackup="true"
+47-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:35:9-35
+48        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+48-->[androidx.core:core:1.12.0] /home/josue/.gradle/caches/9.3.1/transforms/dd4bce26bc96dffd875928815046b4b5/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+49        android:debuggable="true"
+50        android:extractNativeLibs="false"
+50-->INJECTED
+51        android:icon="@mipmap/ic_launcher"
+51-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:36:9-43
+52        android:label="@string/app_name"
+52-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:37:9-41
+53        android:roundIcon="@mipmap/ic_launcher_round"
+53-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:38:9-54
+54        android:supportsRtl="true"
+54-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:39:9-35
+55        android:testOnly="true"
+56        android:theme="@style/Theme.Detox" >
+56-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:40:9-43
+57
+58        <!--
+59            MainActivity: Entry point of the app
+60            Shows list of apps and blocked status
+61        -->
+62        <activity
+62-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:47:9-54:20
+63            android:name="com.example.detox.ui.MainActivity"
+63-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:48:13-44
+64            android:exported="true" >
+64-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:49:13-36
+65            <intent-filter>
+65-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:50:13-53:29
+66                <action android:name="android.intent.action.MAIN" />
+66-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:51:17-69
+66-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:51:25-66
+67
+68                <category android:name="android.intent.category.LAUNCHER" />
+68-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:52:17-77
+68-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:52:27-74
+69            </intent-filter>
+70        </activity>
+71
+72        <!--
+73            BlockOverlayActivity: Shows "App Blocked" screen
+74            NoHistory=true so it doesn't stay in back stack
+75            ExcludeFromRecents=true so it's hidden from app switcher
+76        -->
+77        <activity
+77-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:61:9-67:40
+78            android:name="com.example.detox.ui.BlockOverlayActivity"
+78-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:62:13-52
+79            android:excludeFromRecents="true"
+79-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:63:13-46
+80            android:exported="false"
+80-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:67:13-37
+81            android:launchMode="singleTask"
+81-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:66:13-44
+82            android:noHistory="true"
+82-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:64:13-37
+83            android:theme="@style/Theme.Detox.BlockOverlay" />
+83-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:65:13-60
+84
+85        <!--
+86            AppBlockAccessibilityService: Detects foreground app changes
+87            This is the core detection mechanism
+88        -->
+89        <service
+89-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:73:9-83:19
+90            android:name="com.example.detox.service.AppBlockAccessibilityService"
+90-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:74:13-65
+91            android:exported="true"
+91-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:75:13-36
+92            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+92-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:76:13-79
+93            <intent-filter>
+93-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:77:13-79:29
+94                <action android:name="android.accessibilityservice.AccessibilityService" />
+94-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:78:17-92
+94-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:78:25-89
+95            </intent-filter>
+96
+97            <meta-data
+97-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:80:13-82:72
+98                android:name="android.accessibilityservice"
+98-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:81:17-60
+99                android:resource="@xml/accessibility_service_config" />
+99-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:82:17-69
+100        </service>
+101
+102        <!--
+103            AppBlockService: Foreground service to keep app alive
+104            Runs persistently in background
+105        -->
+106        <service
+106-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:89:9-92:56
+107            android:name="com.example.detox.service.AppBlockService"
+107-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:90:13-52
+108            android:exported="false"
+108-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:91:13-37
+109            android:foregroundServiceType="dataSync" />
+109-->/home/josue/Documents/Proyectos/Detox/app/src/main/AndroidManifest.xml:92:13-53
+110
+111        <provider
+111-->[androidx.emoji2:emoji2:1.2.0] /home/josue/.gradle/caches/9.3.1/transforms/14689d085b7441dc55052cd02df226bc/transformed/emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+112            android:name="androidx.startup.InitializationProvider"
+112-->[androidx.emoji2:emoji2:1.2.0] /home/josue/.gradle/caches/9.3.1/transforms/14689d085b7441dc55052cd02df226bc/transformed/emoji2-1.2.0/AndroidManifest.xml:25:13-67
+113            android:authorities="com.example.detox.androidx-startup"
+113-->[androidx.emoji2:emoji2:1.2.0] /home/josue/.gradle/caches/9.3.1/transforms/14689d085b7441dc55052cd02df226bc/transformed/emoji2-1.2.0/AndroidManifest.xml:26:13-68
+114            android:exported="false" >
+114-->[androidx.emoji2:emoji2:1.2.0] /home/josue/.gradle/caches/9.3.1/transforms/14689d085b7441dc55052cd02df226bc/transformed/emoji2-1.2.0/AndroidManifest.xml:27:13-37
+115            <meta-data
+115-->[androidx.emoji2:emoji2:1.2.0] /home/josue/.gradle/caches/9.3.1/transforms/14689d085b7441dc55052cd02df226bc/transformed/emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+116                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+116-->[androidx.emoji2:emoji2:1.2.0] /home/josue/.gradle/caches/9.3.1/transforms/14689d085b7441dc55052cd02df226bc/transformed/emoji2-1.2.0/AndroidManifest.xml:30:17-75
+117                android:value="androidx.startup" />
+117-->[androidx.emoji2:emoji2:1.2.0] /home/josue/.gradle/caches/9.3.1/transforms/14689d085b7441dc55052cd02df226bc/transformed/emoji2-1.2.0/AndroidManifest.xml:31:17-49
+118            <meta-data
+118-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/josue/.gradle/caches/9.3.1/transforms/ee9f8b9180f27ac6a3ed3336e609500c/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:29:13-31:52
+119                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+119-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/josue/.gradle/caches/9.3.1/transforms/ee9f8b9180f27ac6a3ed3336e609500c/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:30:17-78
+120                android:value="androidx.startup" />
+120-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/josue/.gradle/caches/9.3.1/transforms/ee9f8b9180f27ac6a3ed3336e609500c/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:31:17-49
+121            <meta-data
+121-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
+122                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+122-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
+123                android:value="androidx.startup" />
+123-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
+124        </provider>
+125
+126        <receiver
+126-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
+127            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+127-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
+128            android:directBootAware="false"
+128-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
+129            android:enabled="true"
+129-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
+130            android:exported="true"
+130-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
+131            android:permission="android.permission.DUMP" >
+131-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
+132            <intent-filter>
+132-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
+133                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+133-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
+133-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
+134            </intent-filter>
+135            <intent-filter>
+135-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
+136                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+136-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
+136-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
+137            </intent-filter>
+138            <intent-filter>
+138-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
+139                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+139-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
+139-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
+140            </intent-filter>
+141            <intent-filter>
+141-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
+142                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+142-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
+142-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/josue/.gradle/caches/9.3.1/transforms/d817d2e9fb0a104029a008b5ad25e8f4/transformed/profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
+143            </intent-filter>
+144        </receiver>
+145    </application>
+146
+147</manifest>

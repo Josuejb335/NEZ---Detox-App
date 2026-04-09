@@ -122,40 +122,67 @@ class MainActivity : AppCompatActivity() {
      */
     private fun loadApps() {
         lifecycleScope.launch {
-            val apps = withContext(Dispatchers.IO) {
-                getInstalledApps()
+            try {
+                val apps = withContext(Dispatchers.IO) {
+                    getInstalledApps()
+                }
+                adapter.submitList(apps)
+                Log.d(TAG, "Loaded ${apps.size} apps")
+
+                if (apps.isEmpty()) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "No apps found. Check QUERY_ALL_PACKAGES permission.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading apps", e)
+                Toast.makeText(
+                    this@MainActivity,
+                    "Error loading apps: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
-            adapter.submitList(apps)
-            Log.d(TAG, "Loaded ${apps.size} apps")
         }
     }
 
     /**
      * Get list of user-installed apps
-     * EXTEND THIS:
-     * - Filter by category
-     * - Sort by usage time
-     * - Add search
+     * Shows all apps that have a launcher icon (can be opened from home screen)
      */
     private fun getInstalledApps(): List<AppInfo> {
         val pm = packageManager
         val blockedApps = repository.getBlockedApps()
+        val myPackageName = applicationContext.packageName
 
-        return pm.getInstalledApplications(0)
-            .filter { app ->
-                // Filter out system apps and our own app
-                app.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM == 0 &&
-                        app.packageName != packageName
-            }
-            .map { app ->
+        // Query apps with MAIN/LAUNCHER intent filter - these show on home screen
+        val mainIntent = android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
+            addCategory(android.content.Intent.CATEGORY_LAUNCHER)
+        }
+        val resolveInfos = pm.queryIntentActivities(mainIntent, 0)
+        Log.d(TAG, "Apps with launcher intent: ${resolveInfos.size}")
+
+        // Get unique packages (some apps have multiple activities)
+        val uniquePackages = resolveInfos
+            .map { it.activityInfo.packageName }
+            .distinct()
+            .filter { it != myPackageName }
+
+        return uniquePackages.mapNotNull { packageName ->
+            try {
+                val appInfo = pm.getApplicationInfo(packageName, 0)
                 AppInfo(
-                    packageName = app.packageName,
-                    appName = pm.getApplicationLabel(app).toString(),
-                    icon = pm.getApplicationIcon(app),
-                    isBlocked = blockedApps.contains(app.packageName)
+                    packageName = packageName,
+                    appName = pm.getApplicationLabel(appInfo).toString(),
+                    icon = pm.getApplicationIcon(appInfo),
+                    isBlocked = blockedApps.contains(packageName)
                 )
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not load app info for $packageName")
+                null
             }
-            .sortedBy { it.appName.lowercase() }
+        }.sortedBy { it.appName.lowercase() }
     }
 
     /**
@@ -222,6 +249,7 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Check if accessibility service is enabled
+     * The enabled services list is colon-separated
      */
     private fun isAccessibilityServiceEnabled(): Boolean {
         val enabledServices = Settings.Secure.getString(
@@ -229,7 +257,20 @@ class MainActivity : AppCompatActivity() {
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
         ) ?: return false
 
-        val serviceName = "$packageName/.service.AppBlockAccessibilityService"
-        return enabledServices.contains(serviceName)
+        // The service can be in different formats:
+        // com.example.detox/.service.AppBlockAccessibilityService
+        // com.example.detox/com.example.detox.service.AppBlockAccessibilityService
+        val myPackageName = applicationContext.packageName
+        val shortServiceName = "$myPackageName/.service.AppBlockAccessibilityService"
+        val fullServiceName = "$myPackageName/com.example.detox.service.AppBlockAccessibilityService"
+
+        Log.d(TAG, "Checking accessibility service in: $enabledServices")
+
+        // Split by colon as the list is colon-separated
+        val services = enabledServices.split(":")
+        return services.any { service ->
+            service.contains(shortServiceName) || service.contains(fullServiceName) ||
+                    service.contains("AppBlockAccessibilityService")
+        }
     }
 }

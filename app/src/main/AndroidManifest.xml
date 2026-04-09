@@ -26,9 +26,11 @@
         - RECEIVE_BOOT_COMPLETED: Optional - auto-start on boot
     -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
 
     <application
         android:name=".DetoxApplication"
@@ -57,13 +59,16 @@
             BlockOverlayActivity: Shows "App Blocked" screen
             NoHistory=true so it doesn't stay in back stack
             ExcludeFromRecents=true so it's hidden from app switcher
+            TaskOnHome=false keeps it on top of blocked app
         -->
         <activity
             android:name=".ui.BlockOverlayActivity"
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:theme="@style/Theme.Detox.BlockOverlay"
-            android:launchMode="singleTask"
+            android:launchMode="singleInstance"
+            android:clearTaskOnLaunch="true"
+            android:stateNotNeeded="true"
             android:exported="false" />
 
         <!--
@@ -73,6 +78,7 @@
         <service
             android:name=".service.AppBlockAccessibilityService"
             android:exported="true"
+            android:label="@string/app_blocker_name"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />

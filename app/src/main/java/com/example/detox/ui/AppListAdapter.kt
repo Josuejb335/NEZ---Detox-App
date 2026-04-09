@@ -43,6 +43,7 @@ class AppListAdapter(
                 tvAppName.text = app.appName
 
                 // Block toggle
+                switchBlock.setOnCheckedChangeListener(null)
                 switchBlock.isChecked = app.isBlocked
                 switchBlock.setOnCheckedChangeListener { _, isChecked ->
                     onToggle(app, isChecked)

@@ -99,7 +99,7 @@ class BlockActivity : Activity() {
 
         // Title
         val title = android.widget.TextView(this).apply {
-            text = "📱 App Blocked"
+            text = "App Blocked"
             textSize = 28f
             gravity = android.view.Gravity.CENTER
             setPadding(0, 0, 0, 20)

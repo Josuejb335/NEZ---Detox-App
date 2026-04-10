@@ -21,6 +21,11 @@ data class AppItem(
 
 /**
  * RecyclerView adapter for app list
+ * 
+ * Performance optimizations:
+ * - Uses ListAdapter with DiffUtil for efficient updates
+ * - Optimized listener management
+ * - Prevents unnecessary listener rebinding
  */
 class AppListAdapter(
     private val onToggle: (packageName: String, appName: String, isBlocked: Boolean) -> Unit
@@ -30,7 +35,7 @@ class AppListAdapter(
         val binding = ItemAppBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-        return ViewHolder(binding)
+        return ViewHolder(binding, onToggle)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -38,7 +43,8 @@ class AppListAdapter(
     }
 
     inner class ViewHolder(
-        private val binding: ItemAppBinding
+        private val binding: ItemAppBinding,
+        private val onToggle: (packageName: String, appName: String, isBlocked: Boolean) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: AppItem) {
@@ -48,13 +54,13 @@ class AppListAdapter(
 
                 // Show attempt count if > 0
                 if (item.attemptCount > 0) {
-                    tvAttempts.text = "Tried ${item.attemptCount} times"
+                    tvAttempts.text = "Tried ${item.attemptCount} time${if (item.attemptCount != 1) "s" else ""}"
                     tvAttempts.visibility = android.view.View.VISIBLE
                 } else {
                     tvAttempts.visibility = android.view.View.GONE
                 }
 
-                // Handle toggle
+                // Handle toggle: set listener after updating checked state to avoid duplicate callbacks
                 switchBlock.setOnCheckedChangeListener(null)
                 switchBlock.isChecked = item.isBlocked
                 switchBlock.setOnCheckedChangeListener { _, isChecked ->

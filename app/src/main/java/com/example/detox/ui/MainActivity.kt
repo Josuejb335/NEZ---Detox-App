@@ -12,6 +12,7 @@ import com.example.detox.data.BlockedAppsRepository
 import com.example.detox.core.AppState
 import com.example.detox.databinding.ActivityMainBinding
 import com.example.detox.service.MonitorForegroundService
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,6 +27,10 @@ import kotlinx.coroutines.withContext
  * - Attempt statistics display
  */
 class MainActivity : AppCompatActivity() {
+
+    private companion object {
+        private const val TAG = "MainActivity"
+    }
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var repository: BlockedAppsRepository
@@ -75,22 +80,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startServices() {
-        val intent = Intent(this, MonitorForegroundService::class.java)
-        startService(intent)
+        try {
+            val intent = Intent(this, MonitorForegroundService::class.java)
+            startService(intent)
+            Log.d(TAG, "Foreground service started")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start foreground service", e)
+        }
     }
 
     private fun checkFirstLaunch() {
-        // Show guidance on first launch
+        // Show guidance on first launch (TODO: implement)
     }
 
     private fun onAppToggled(packageName: String, appName: String, isBlocked: Boolean) {
+        if (packageName.isBlank()) {
+            Log.w(TAG, "Attempted to toggle blank package name")
+            return
+        }
+        
         if (isBlocked) {
             repository.addApp(packageName)
             Toast.makeText(this, "$appName blocked", Toast.LENGTH_SHORT).show()
+            Log.d(TAG, "App blocked: $packageName")
         } else {
             repository.removeApp(packageName)
             repository.clearAttemptCount(packageName)
             Toast.makeText(this, "$appName unblocked", Toast.LENGTH_SHORT).show()
+            Log.d(TAG, "App unblocked: $packageName")
         }
     }
 
@@ -106,33 +123,39 @@ class MainActivity : AppCompatActivity() {
     private fun getInstalledApps(): List<AppItem> {
         val pm = packageManager
         val blockedApps = repository.getBlockedApps()
-
-        // Query launcher apps
-        val intent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_LAUNCHER)
-        }
-        val resolveInfos = pm.queryIntentActivities(intent, 0)
         val myPackage = packageName
-
-        return resolveInfos
-            .map { it.activityInfo.packageName }
-            .distinct()
-            .filter { it != myPackage }
-            .mapNotNull { pkg ->
-                try {
-                    val info = pm.getApplicationInfo(pkg, 0)
-                    AppItem(
-                        packageName = pkg,
-                        appName = pm.getApplicationLabel(info).toString(),
-                        icon = pm.getApplicationIcon(info),
-                        isBlocked = blockedApps.contains(pkg),
-                        attemptCount = repository.getAttemptCount(pkg)
-                    )
-                } catch (e: Exception) {
-                    null
-                }
+        
+        try {
+            // Query launcher apps
+            val intent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
             }
-            .sortedBy { it.appName.lowercase() }
+            val resolveInfos = pm.queryIntentActivities(intent, 0)
+
+            return resolveInfos
+                .map { it.activityInfo.packageName }
+                .distinct()
+                .filter { it != myPackage }
+                .mapNotNull { pkg ->
+                    try {
+                        val info = pm.getApplicationInfo(pkg, 0)
+                        AppItem(
+                            packageName = pkg,
+                            appName = pm.getApplicationLabel(info).toString(),
+                            icon = pm.getApplicationIcon(info),
+                            isBlocked = blockedApps.contains(pkg),
+                            attemptCount = repository.getAttemptCount(pkg)
+                        )
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to load app info for $pkg", e)
+                        null
+                    }
+                }
+                .sortedBy { it.appName.lowercase() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error querying installed apps", e)
+            return emptyList()
+        }
     }
 
     private fun updatePermissionStatus() {
@@ -147,8 +170,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openAccessibilitySettings() {
-        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-        startActivity(intent)
-        Toast.makeText(this, "Enable Detox Monitoring", Toast.LENGTH_LONG).show()
+        try {
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            startActivity(intent)
+            Toast.makeText(this, "Enable Detox Monitoring", Toast.LENGTH_LONG).show()
+            Log.d(TAG, "Opened accessibility settings")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open accessibility settings", e)
+            Toast.makeText(this, "Could not open settings", Toast.LENGTH_SHORT).show()
+        }
     }
 }

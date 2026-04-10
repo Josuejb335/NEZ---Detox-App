@@ -4,6 +4,11 @@
 
     This configures how the accessibility service operates.
     It only listens to window state changes (app switches).
+    
+    Privacy-focused settings:
+    - canRetrieveWindowContent: false (no content reading)
+    - Only listening to typeWindowStateChanged events
+    - Minimal notification timeout for efficiency
 -->
 <accessibility-service
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -12,4 +17,6 @@
     android:accessibilityEventTypes="typeWindowStateChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:notificationTimeout="100"
-    android:canRetrieveWindowContent="false" />
+    android:canRetrieveWindowContent="false"
+    android:canRequestTouchExplorationMode="false"
+    android:canPerformGestures="false" />

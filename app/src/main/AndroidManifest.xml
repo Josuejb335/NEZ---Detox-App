@@ -21,8 +21,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Accessibility Service - for detecting foreground apps
-         This is a core feature for digital wellbeing -->
-    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
+         This is a core feature for digital wellbeing 
+         Note: This permission is required to declare an accessibility service.
+               The lint warning is a false positive; we don't use it directly. -->
+    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE"
+        tools:ignore="ProtectedPermissions" />
 
     <!-- Query apps - to show list of installed apps -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"

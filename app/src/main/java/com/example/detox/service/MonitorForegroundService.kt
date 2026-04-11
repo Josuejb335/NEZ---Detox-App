@@ -8,11 +8,14 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.detox.R
 import com.example.detox.core.Constants
+import com.example.detox.data.EmergencyRepository
 import com.example.detox.ui.MainActivity
 
 /**
@@ -31,11 +34,21 @@ class MonitorForegroundService : Service() {
 
     companion object {
         private const val TAG = "MonitorForeground"
+        private const val EMERGENCY_CHECK_INTERVAL_MS = 15_000L
+    }
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val emergencyCheckRunnable = object : Runnable {
+        override fun run() {
+            EmergencyRepository(this@MonitorForegroundService).clearExpiredSessionIfNeeded()
+            mainHandler.postDelayed(this, EMERGENCY_CHECK_INTERVAL_MS)
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        mainHandler.post(emergencyCheckRunnable)
         Log.d(TAG, "Service created")
     }
 
@@ -75,6 +88,7 @@ class MonitorForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        mainHandler.removeCallbacks(emergencyCheckRunnable)
         super.onDestroy()
         Log.d(TAG, "Service destroyed")
     }

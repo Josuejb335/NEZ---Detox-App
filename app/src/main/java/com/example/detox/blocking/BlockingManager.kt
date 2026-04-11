@@ -4,10 +4,10 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import androidx.core.os.HandlerCompat
 import com.example.detox.data.BlockedAppsRepository
 import com.example.detox.core.AppState
 import com.example.detox.core.Constants
+import com.example.detox.data.EmergencyRepository
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
 
@@ -59,6 +59,13 @@ object BlockingManager {
 
         Log.d(TAG, "checkAndBlock called for: $packageName")
 
+        val emergencyRepository = EmergencyRepository(context)
+        emergencyRepository.clearExpiredSessionIfNeeded()
+        if (emergencyRepository.isEmergencyActiveFor(packageName)) {
+            Log.d(TAG, "$packageName allowed by active emergency unlock")
+            return false
+        }
+
         // Thread-safe check if already blocking this package
         stateLock.write {
             if (currentlyBlocking == packageName) {
@@ -74,6 +81,11 @@ object BlockingManager {
         // Check if blocked
         if (!repository.isBlocked(packageName)) {
             Log.d(TAG, "$packageName is NOT blocked")
+            return false
+        }
+
+        if (isInNormalUnlockSession(context, packageName)) {
+            Log.d(TAG, "$packageName allowed by normal unlock session")
             return false
         }
 
@@ -95,12 +107,21 @@ object BlockingManager {
         return true
     }
 
+    private fun isInNormalUnlockSession(context: Context, packageName: String): Boolean {
+        // Reserved for integration with timer-based unlock sessions.
+        return false
+    }
+
     /**
      * Public method to trigger blocking for a specific package
      */
     fun triggerBlock(context: Context, packageName: String) {
         if (packageName.isBlank()) {
             Log.w(TAG, "Blank packageName in triggerBlock")
+            return
+        }
+        if (EmergencyRepository(context).isEmergencyActiveFor(packageName)) {
+            Log.d(TAG, "Skipping triggerBlock due to active emergency unlock")
             return
         }
         val repository = BlockedAppsRepository(context)
@@ -149,7 +170,10 @@ object BlockingManager {
      * Check if an app should be allowed (not blocked)
      */
     fun isAllowed(context: Context, packageName: String): Boolean {
-        return !BlockedAppsRepository(context).isBlocked(packageName)
+        val blocked = BlockedAppsRepository(context).isBlocked(packageName)
+        if (!blocked) return true
+        if (isInNormalUnlockSession(context, packageName)) return true
+        return EmergencyRepository(context).isEmergencyActiveFor(packageName)
     }
 
     /**

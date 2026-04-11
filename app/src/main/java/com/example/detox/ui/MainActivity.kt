@@ -10,6 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.detox.data.BlockedAppsRepository
 import com.example.detox.core.AppState
+import com.example.detox.data.EmergencyRepository
 import com.example.detox.databinding.ActivityMainBinding
 import com.example.detox.service.MonitorForegroundService
 import android.util.Log
@@ -34,6 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var repository: BlockedAppsRepository
+    private lateinit var emergencyRepository: EmergencyRepository
     private lateinit var adapter: AppListAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,6 +44,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         repository = BlockedAppsRepository(this)
+        emergencyRepository = EmergencyRepository(this)
 
         setupRecyclerView()
         setupButtons()
@@ -110,6 +113,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             repository.removeApp(packageName)
             repository.clearAttemptCount(packageName)
+            emergencyRepository.resetForPackage(packageName)
             Toast.makeText(this, "$appName unblocked", Toast.LENGTH_SHORT).show()
             Log.d(TAG, "App unblocked: $packageName")
         }

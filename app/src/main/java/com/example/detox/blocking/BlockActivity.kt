@@ -8,6 +8,7 @@ import android.os.Looper
 import android.util.Log
 import com.example.detox.core.Constants
 import com.example.detox.data.BlockedAppsRepository
+import com.example.detox.data.EmergencyRepository
 
 /**
  * BlockActivity - Full-screen blocking UI
@@ -44,6 +45,7 @@ class BlockActivity : Activity() {
     }
 
     private lateinit var repository: BlockedAppsRepository
+    private lateinit var emergencyRepository: EmergencyRepository
     private var blockedPackage: String = ""
     private var attemptCount: Int = 0
     private val handler = Handler(Looper.getMainLooper())
@@ -54,6 +56,7 @@ class BlockActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         repository = BlockedAppsRepository(this)
+        emergencyRepository = EmergencyRepository(this)
         blockedPackage = intent?.getStringExtra(EXTRA_PACKAGE) ?: ""
         attemptCount = intent?.getIntExtra(EXTRA_ATTEMPTS, 0) ?: 0
 
@@ -65,15 +68,8 @@ class BlockActivity : Activity() {
 
         Log.d(TAG, "Blocking $blockedPackage (attempt #$attemptCount)")
 
-        // Setup UI BEFORE any transitions
+        emergencyRepository.clearExpiredSessionIfNeeded()
         setupSimpleUi()
-
-        // Send to home immediately to hide blocked app
-        goHome()
-        
-        // Provide haptic feedback to user
-        @Suppress("DEPRECATION")
-        window?.decorView?.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
     }
 
     /**
@@ -129,18 +125,22 @@ class BlockActivity : Activity() {
             setOnClickListener { onUserExit() }
         }
 
-        // Take a break button (optional feature)
-        val breakButton = android.widget.Button(this).apply {
-            text = "Take a 5-min Break"
-            setOnClickListener { onTakeBreak() }
+        val emergencyButton = android.widget.Button(this).apply {
+            text = "Emergency Unlock (3 min)"
+            setOnClickListener { onEmergencyUnlock() }
             setPadding(0, 20, 0, 0)
+        }
+        emergencyButton.visibility = if (shouldShowEmergencyButton()) {
+            android.view.View.VISIBLE
+        } else {
+            android.view.View.GONE
         }
 
         layout.addView(title)
         layout.addView(appLabel)
         layout.addView(attemptText)
         layout.addView(exitButton)
-        layout.addView(breakButton)
+        layout.addView(emergencyButton)
 
         // Set content BEFORE transitions
         setContentView(layout)
@@ -156,11 +156,16 @@ class BlockActivity : Activity() {
     }
 
     /**
-     * User wants a temporary break (TODO: implement timer-based unblock)
+     * One-time emergency unlock for this app.
      */
-    private fun onTakeBreak() {
+    private fun onEmergencyUnlock() {
+        if (!emergencyRepository.canStartForPackage(blockedPackage)) {
+            return
+        }
+        emergencyRepository.startEmergencyUnlock(blockedPackage)
         isClosing = true
-        goHome()
+        // Finish only, so Android returns to the previously foreground app.
+        // Do not start Detox activities here.
         finish()
     }
 
@@ -181,12 +186,8 @@ class BlockActivity : Activity() {
         }
     }
 
-    /**
-     * Check if we should re-trigger blocking
-     * Called when user tries to dismiss
-     */
-    private fun shouldReTrigger(): Boolean {
-        return !isClosing && repository.isBlocked(blockedPackage)
+    private fun shouldShowEmergencyButton(): Boolean {
+        return emergencyRepository.canStartForPackage(blockedPackage)
     }
 
     override fun onBackPressed() {
@@ -198,7 +199,10 @@ class BlockActivity : Activity() {
         super.onPause()
         
         // If not user-initiated close, check if we should re-trigger
-        if (!isClosing && repository.isBlocked(blockedPackage)) {
+        if (!isClosing &&
+            repository.isBlocked(blockedPackage) &&
+            !emergencyRepository.isEmergencyActiveFor(blockedPackage)
+        ) {
             Log.d(TAG, "Activity paused, checking re-trigger for $blockedPackage")
             
             val runnable = Runnable {
@@ -222,4 +226,3 @@ class BlockActivity : Activity() {
         handler.removeCallbacksAndMessages(null)
     }
 }
-

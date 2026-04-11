@@ -2,7 +2,6 @@ package com.example.detox.service
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
-import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.util.Log
@@ -10,6 +9,7 @@ import android.view.accessibility.AccessibilityEvent
 import com.example.detox.blocking.BlockingManager
 import com.example.detox.core.AppState
 import com.example.detox.core.Constants
+import com.example.detox.data.EmergencyRepository
 
 /**
  * MonitorAccessibilityService - Detects foreground app changes
@@ -38,6 +38,8 @@ class MonitorAccessibilityService : AccessibilityService() {
     }
 
     private var lastPackageName: String = ""
+    private var emergencyBypassPackage: String? = null
+    private var emergencyBypassUntilMs: Long = 0L
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -90,6 +92,20 @@ class MonitorAccessibilityService : AccessibilityService() {
             // Skip our own app
             if (packageName == applicationContext.packageName) {
                 Log.d(TAG, "Skipping own package")
+                return
+            }
+
+            val now = System.currentTimeMillis()
+            if (packageName == emergencyBypassPackage && now < emergencyBypassUntilMs) {
+                return
+            }
+
+            val emergencyRepository = EmergencyRepository(this)
+            if (emergencyRepository.isEmergencyActiveFor(packageName)) {
+                // Debounce accessibility re-triggers right after emergency unlock activation.
+                emergencyBypassPackage = packageName
+                emergencyBypassUntilMs = now + 300L
+                Log.d(TAG, "Skipping block for active emergency unlock: $packageName")
                 return
             }
 

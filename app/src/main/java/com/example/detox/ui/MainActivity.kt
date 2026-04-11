@@ -68,6 +68,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupButtons() {
+        binding.btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
         binding.btnEnableAccessibility.setOnClickListener {
             openAccessibilitySettings()
         }

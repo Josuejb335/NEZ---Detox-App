@@ -222,3 +222,4 @@ class BlockActivity : Activity() {
         handler.removeCallbacksAndMessages(null)
     }
 }
+
